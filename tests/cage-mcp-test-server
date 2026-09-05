@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+"""Installed-module fake server used by the protocol test."""
+
+from cage_use.mcp import create_server
+
+from cage_mcp_test_support import FakeDesktop
+
+
+create_server(FakeDesktop()).run(transport="stdio")

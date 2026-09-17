@@ -9,7 +9,7 @@ description = "App-scoped computer use through headless Cage sessions"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["mcp>=1.29", "Pillow"]
+dependencies = ["mcp>=1.29,<2", "Pillow"]
 
 [project.scripts]
 cage-mcp = "cage_use.__main__:main"

@@ -2,7 +2,7 @@
 """Backend contract tests and a real MCP stdio handshake using a fake display."""
 from __future__ import annotations
 
-from io import BytesIO
+from io import BytesIO, StringIO
 import os
 from pathlib import Path
 import subprocess
@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from cage_use.mcp import create_server
+from cage_use.__main__ import main
 from cage_use.session import CageDesktop, Session
 from PIL import Image
 
@@ -136,6 +137,23 @@ class BackendTests(unittest.TestCase):
             self.assertEqual(argv[argv.index("--name") + 1], result["id"])
             self.assertEqual(desktop.get(result["id"]).display, "wayland-17")
             desktop.close_all()
+
+    def test_cli_help_and_unexpected_arguments_do_not_start_server(self):
+        with patch("cage_use.__main__.create_server") as server, \
+             patch("sys.stdout", new_callable=StringIO) as output:
+            with self.assertRaises(SystemExit) as stopped:
+                main(["--help"])
+        self.assertEqual(stopped.exception.code, 0)
+        self.assertIn("usage: cage-mcp", output.getvalue())
+        server.assert_not_called()
+
+        with patch("cage_use.__main__.create_server") as server, \
+             patch("sys.stderr", new_callable=StringIO) as error:
+            with self.assertRaises(SystemExit) as stopped:
+                main(["unexpected"])
+        self.assertEqual(stopped.exception.code, 2)
+        self.assertIn("usage: cage-mcp", error.getvalue())
+        server.assert_not_called()
 
 
 class ProtocolTests(unittest.IsolatedAsyncioTestCase):

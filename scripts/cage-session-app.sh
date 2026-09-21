@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() { echo 'Usage: cage-session-app PORT APP [ARG...]'; }
+if [[ ${1:-} == -h || ${1:-} == --help ]]; then usage; exit 0; fi
+[[ $# -ge 2 ]] || { usage >&2; exit 2; }
+
 port=$1
 shift
 : "${XDG_RUNTIME_DIR:?}" "${WAYLAND_DISPLAY:?}"

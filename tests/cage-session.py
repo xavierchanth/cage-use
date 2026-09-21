@@ -29,9 +29,22 @@ class CageSessionTests(unittest.TestCase):
         path.write_text(code)
         path.chmod(0o755)
 
-    def run_script(self, name, args):
+    def run_script(self, name, args, *, env=None):
         return subprocess.run([BASH, str(ROOT / "scripts" / name), *args],
-                              env=self.env, capture_output=True, text=True, timeout=10)
+                              env=env or self.env, capture_output=True, text=True, timeout=10)
+
+    def test_session_app_help_and_missing_arguments_precede_environment_checks(self):
+        env = dict(self.env)
+        env.pop("XDG_RUNTIME_DIR")
+        env.pop("WAYLAND_DISPLAY")
+        for flag in ["-h", "--help"]:
+            result = self.run_script("cage-session-app.sh", [flag], env=env)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Usage: cage-session-app", result.stdout)
+        for args in [[], ["5900"]]:
+            result = self.run_script("cage-session-app.sh", args, env=env)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIn("Usage: cage-session-app", result.stderr)
 
     def test_arguments_remain_literal(self):
         self.executable("systemd-run", "#!/usr/bin/env python3\nimport json,os,sys\n"

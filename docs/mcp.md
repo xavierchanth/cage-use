@@ -1,6 +1,6 @@
 # MCP interface
 
-`cage-mcp` is the v0 delivery interface for cage-use. It exposes app-scoped computer use over MCP stdio. Cage is the sole runtime target.
+`cage-mcp` is the v0 delivery interface for cage-use. It exposes app-scoped computer use over MCP stdio. Cage is the sole runtime target. The complete Nix package also provides both session launchers and installs this reference, the project documentation and license, and the companion Codex skill.
 
 ## Interface
 
@@ -62,7 +62,9 @@ executable grants it that user's filesystem and network access.
 `tests/cage-mcp.py` exercises the Cage session boundaries and a real MCP stdio
 initialize/list/call/disconnect exchange with a fake display. The Nix flake
 exposes it as `checks.SYSTEM.protocol`. `tests/cage-session.py` tests
-the launcher lifecycle. These tests do not replace a live Wayland smoke test.
+the launcher lifecycle. `checks.SYSTEM.packaging` verifies that the complete
+derivation contains all three executables and installed resources. These tests
+do not replace a live Wayland smoke test.
 
 Interface reference: installed OpenAI `computer-use` plugin version
 `1.0.1000926`, `skills/computer-use/SKILL.md` (`Sky` API), and unified plugin

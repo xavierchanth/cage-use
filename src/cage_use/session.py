@@ -18,6 +18,8 @@ import uuid
 
 from PIL import Image
 
+from .recording import Recording
+
 
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
 Button = Literal["left", "right", "middle", "l", "r", "m"]
@@ -33,6 +35,7 @@ class Session:
     process: subprocess.Popen
     directory: tempfile.TemporaryDirectory
     frame_size: tuple[int, int] | None = None
+    recording: Recording | None = None
 
     @property
     def unit(self) -> str:
@@ -40,7 +43,8 @@ class Session:
 
     def summary(self) -> dict:
         return {"id": self.id, "displayName": Path(self.executable).name,
-                "isRunning": self.process.poll() is None}
+                "isRunning": self.process.poll() is None,
+                "recording": self.recording.summary() if self.recording else None}
 
 
 class CageDesktop:
@@ -134,15 +138,43 @@ class CageDesktop:
             session = self.sessions.get(app)
             if session is None:
                 raise ValueError("Unknown app ID.")
-            self.stop_process(app, session.process)
-            session.directory.cleanup()
-            del self.sessions[app]
-            return {"app": app, "closed": True}
+            recording = None
+            try:
+                if session.recording:
+                    recording = session.recording.stop()
+            finally:
+                self.stop_process(app, session.process)
+                session.directory.cleanup()
+                del self.sessions[app]
+            return {"app": app, "closed": True, "recording": recording}
 
     def close_all(self):
         with self.lock:
+            errors = []
             for app in list(self.sessions):
-                self.close(app)
+                try:
+                    self.close(app)
+                except RuntimeError as error:
+                    errors.append(error)
+            if errors:
+                raise RuntimeError("Session cleanup failed: " + "; ".join(map(str, errors)))
+
+    def start_recording(self, app: str) -> dict:
+        with self.lock:
+            session = self.get(app)
+            if session.recording and session.recording.process.poll() is None:
+                raise ValueError("This app is already recording. Stop its recording first.")
+            session.recording = Recording.start(app, self.environment(session), session.directory.name)
+            return dict(session.recording.summary(), app=app)
+
+    def stop_recording(self, app: str) -> dict:
+        with self.lock:
+            session = self.sessions.get(app)
+            if session is None:
+                raise ValueError("Unknown app ID.")
+            if session.recording is None:
+                raise ValueError("This app has no recording. Use start_recording first.")
+            return dict(session.recording.stop(), app=app)
 
     def list_apps(self) -> list[dict]:
         with self.lock:
@@ -171,7 +203,9 @@ class CageDesktop:
                                        "coordinateSpace": "image-pixels", "scale": 1},
                         "text": "Screenshot-only state. No accessibility tree or element indices.",
                         "capabilities": {"coordinates": True, "keyboard": True,
-                                         "accessibility": False, "clipboard": False}}
+                                         "accessibility": False, "clipboard": False,
+                                         "recording": True},
+                        "recording": session.recording.summary() if session.recording else None}
             return metadata, png
 
     @staticmethod
@@ -186,6 +220,14 @@ class CageDesktop:
 
     def vnc(self, session: Session, commands: list[str]):
         self.run(["vncdo", "-s", f"127.0.0.1::{session.port}", *commands])
+
+    def interact(self, operation: str, app: str, *args) -> tuple[dict, bytes]:
+        """Apply input and capture its result without interleaving another client."""
+        if operation not in {"click", "drag", "scroll", "press_key", "type_text"}:
+            raise ValueError("Unknown input operation.")
+        with self.lock:
+            getattr(self, operation)(app, *args)
+            return self.capture(app)
 
     def click(self, app: str, x: int | None, y: int | None, mouse_button: Button,
               click_count: int, element_index: int | None):
@@ -207,8 +249,17 @@ class CageDesktop:
             session = self.get(app)
             self.point(session, from_x, from_y)
             self.point(session, to_x, to_y)
-            self.vnc(session, ["move", str(from_x), str(from_y), "mousedown", "1",
-                               "drag", str(to_x), str(to_y), "mouseup", "1"])
+            # vncdo's drag sleeps 200 ms per pixel, exceeding our timeout for
+            # ordinary gestures. Interpolate a bounded path on one connection;
+            # explicit pauses give the app time to process motion while held.
+            steps = max(1, min(20, max(abs(to_x - from_x), abs(to_y - from_y))))
+            commands = ["move", str(from_x), str(from_y), "mousedown", "1"]
+            for step in range(1, steps + 1):
+                x = from_x + (to_x - from_x) * step // steps
+                y = from_y + (to_y - from_y) * step // steps
+                commands += ["pause", "0.02", "move", str(x), str(y)]
+            commands += ["pause", "0.02", "mouseup", "1"]
+            self.vnc(session, commands)
 
     def scroll(self, app: str, direction: Direction, pages: int, x: int, y: int,
                element_index: int | None):

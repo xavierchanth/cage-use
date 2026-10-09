@@ -34,7 +34,7 @@ pkgs.python3Packages.buildPythonApplication {
     wrapProgram "$out/bin/cage-mcp" \
       --prefix PATH : ${pkgs.lib.makeBinPath [
         pkgs.grim pkgs.wtype pkgs.python3Packages.vncdotool pkgs.systemd
-        pkgs.coreutils pkgs.dbus pkgs.cage pkgs.wayvnc
+        pkgs.coreutils pkgs.dbus pkgs.cage pkgs.wayvnc pkgs.wf-recorder
       ]} \
       --prefix PATH : "$out/bin"
     wrapProgram "$out/bin/cage-session" \

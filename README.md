@@ -2,11 +2,11 @@
 
 App-scoped computer use for Linux, backed by headless Cage sessions.
 
-cage-use launches a task-specific application, captures its display, sends pointer and keyboard input, and cleans up the session when finished. Cage is the sole runtime. MCP is the v0 delivery interface, accompanied by a Codex skill; the session layer remains independent of MCP so another delivery can be added separately.
+cage-use launches a task-specific application, captures its display, records videos, sends pointer and keyboard input, and cleans up the session when finished. Cage is the sole runtime. MCP is the v0 delivery interface, accompanied by a Codex skill; the session layer remains independent of MCP so another delivery can be added separately.
 
 ## Status
 
-Version 0.2.0 provides one complete Nix package containing the MCP server, session launchers, Codex skill, documentation, and runtime dependencies. Launcher and MCP contract tests use fake displays; a live Wayland smoke test is still pending.
+Version 0.2.0 provides one complete Nix package containing the MCP server, session launchers, Codex skill, documentation, and runtime dependencies. Launcher and MCP contract tests use fake displays. Development changes additionally passed live Firefox checks on Zeus: long drags, clicks, typing, scrolling, session survival across SSH reconnects, and cleanup.
 
 ## Layout
 
@@ -39,6 +39,17 @@ The result contains:
 Register the server using `codex mcp add cage-use -- /absolute/path/to/result/bin/cage-mcp`. Install or link `result/share/codex/skills/cage-use` into the target host's Codex skills directory. A running systemd user manager and owned `XDG_RUNTIME_DIR` are required.
 
 Host configuration remains responsible for selecting a machine, installing the package, registering the MCP server, and activating the skill.
+
+For apps that survive SSH or MCP reconnects, run `cage-mcp --serve SOCKET` as
+a persistent user service and register `cage-mcp --connect SOCKET` as the MCP
+command. The socket must live in an owned, private directory. See the
+[service setup](docs/mcp.md#persistent-sessions) for a systemd example.
+Plain `cage-mcp` continues to close its apps on disconnect.
+
+Use `start_recording(app)` and `stop_recording(app)` to save a silent MP4 of
+an app session. Videos survive app cleanup and default to
+`~/.local/state/cage-use/recordings` on the Cage host. See
+[screen recording](docs/mcp.md#screen-recording) for storage and remote downloads.
 
 Cage provides a separate display. Sessions and their applications run as the user who invokes `cage-mcp`, retaining that user's filesystem and network permissions.
 

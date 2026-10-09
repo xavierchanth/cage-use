@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -26,6 +27,8 @@ class CageSessionTests(unittest.TestCase):
 
     def executable(self, name, code):
         path = self.bin / name
+        code = code.replace("#!/usr/bin/env python3\n", f"#!{sys.executable}\n", 1)
+        code = code.replace("#!/usr/bin/env bash\n", f"#!{BASH}\n", 1)
         path.write_text(code)
         path.chmod(0o755)
 

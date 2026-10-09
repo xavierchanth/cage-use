@@ -18,6 +18,7 @@
         let
           pkgs = import nixpkgs { inherit system; };
           package = import ./nix/package.nix { inherit pkgs; };
+          testPython = pkgs.python3.withPackages (ps: [ ps.mcp ps.pillow ]);
           aliases = self.packages.${system};
           aliasesMatch = builtins.all
             (candidate: candidate.drvPath == package.drvPath)
@@ -25,14 +26,16 @@
               aliases.cage-session aliases.cage-session-app ];
         in {
           protocol = pkgs.runCommand "cage-use-protocol-tests" {
-            nativeBuildInputs = [ package pkgs.makeWrapper ];
+            nativeBuildInputs = [ package pkgs.makeWrapper testPython ];
             PYTHONDONTWRITEBYTECODE = "1";
           } ''
-            makeWrapper ${./tests/cage-mcp-test-server} "$TMPDIR/bin/cage-mcp-test-server" \
+            makeWrapper ${testPython}/bin/python3 "$TMPDIR/bin/cage-mcp-test-server" \
+              --add-flags ${./tests/cage-mcp-test-server} \
               --prefix PATH : ${pkgs.lib.makeBinPath [ package ]} \
-              --prefix PYTHONPATH : ${./tests}
+              --prefix PYTHONPATH : ${package}/${pkgs.python3.sitePackages}:${./tests}
             export PATH="$TMPDIR/bin:$PATH"
-            python3 ${./tests/cage-mcp.py}
+            export PYTHONPATH="${package}/${pkgs.python3.sitePackages}:${./tests}:''${PYTHONPATH:-}"
+            ${testPython}/bin/python3 ${./tests/cage-mcp.py}
             test -x ${package}/bin/cage-mcp
             touch "$out"
           '';

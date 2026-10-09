@@ -6,7 +6,7 @@ cage-use launches a task-specific application, captures its display, records vid
 
 ## Status
 
-Version 0.2.0 provides one complete Nix package containing the MCP server, session launchers, Codex skill, documentation, and runtime dependencies. Launcher and MCP contract tests use fake displays. Development changes additionally passed live Firefox checks on Zeus: long drags, clicks, typing, scrolling, session survival across SSH reconnects, and cleanup.
+Version 0.3.0 adds persistent sessions across SSH/MCP reconnects and app-scoped MP4 recording to the complete Nix package containing the MCP server, session launchers, Codex skill, documentation, and runtime dependencies. Launcher and MCP contract tests use fake displays. Development changes additionally passed live Firefox checks on Zeus: long drags, clicks, typing, scrolling, session survival across SSH reconnects, and cleanup.
 
 ## Layout
 
@@ -23,10 +23,10 @@ Session ownership, screen capture, and input behavior live in `cage_use.session`
 
 On Linux, build with `nix build .#cage-use` and run checks with `nix flake check`. The default package and the `cage-use`, `cage-mcp`, `cage-session`, and `cage-session-app` package outputs are aliases of the same complete derivation.
 
-Install the immutable v0.2.0 release into a Nix profile with:
+Install the immutable v0.3.0 release into a Nix profile with:
 
 ```console
-nix profile install github:xavierchanth/cage-use/v0.2.0#cage-use
+nix profile install github:xavierchanth/cage-use/v0.3.0#cage-use
 ```
 
 The result contains:

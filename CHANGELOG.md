@@ -4,6 +4,8 @@ All notable changes to cage-use are documented here.
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-09
+
 - Bound drag motion to 20 steps so long gestures fit within the command timeout.
 - Add an optional private Unix-socket session service and MCP client mode so
   apps survive SSH/MCP reconnects until explicitly closed or the service stops.

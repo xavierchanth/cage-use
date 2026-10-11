@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cage · App viewer</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #14171b; color: #e9edf2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 24px; border-bottom: 1px solid #343b45; }
+  h1 { font-size: 18px; letter-spacing: -.3px; margin: 0; }
+  h1 span { color: #a7b2c0; font-weight: 400; }
+  label { font-size: 14px; }
+  select, button, input { font: inherit; color: inherit; background: #252b34; border: 1px solid #505b6b; border-radius: 6px; padding: 8px 12px; }
+  select { max-width: min(340px, 80vw); }
+  button { cursor: pointer; }
+  button:hover { background: #354253; }
+  button:disabled { cursor: default; opacity: .5; }
+  :focus-visible { outline: 2px solid #8bc6ff; outline-offset: 3px; }
+  #status { margin-left: auto; color: #a7b2c0; font-size: 13px; }
+  #status.error { color: #ffb7ac; }
+  main { padding: 20px 24px; }
+  #empty { text-align: center; padding: 80px 16px; color: #a7b2c0; }
+  #empty strong { display: block; font-size: 22px; color: #e9edf2; margin-bottom: 12px; }
+  #controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+  #controls small { margin-left: auto; color: #a7b2c0; }
+  #stage { display: flex; justify-content: center; background: #0b0d10; min-height: 180px; border-radius: 8px; padding: 8px; }
+  #screen { width: 100%; height: min(70vh, 800px); min-height: 240px; }
+  #send { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+  #text { flex: 1; min-width: 160px; }
+  .hint { color: #a7b2c0; font-size: 13px; line-height: 1.6; }
+  [hidden] { display: none !important; }
+  @media (max-width: 600px) { header, main { padding: 16px; } #status { width: 100%; margin: 0; } #controls small { width: 100%; margin: 0; } }
+</style>
+<header>
+  <h1>Cage <span>/ App viewer</span></h1>
+  <label for="apps">App</label>
+  <select id="apps" aria-label="App"><option value="">Waiting for apps…</option></select>
+  <span id="status" role="status" aria-live="polite">Connecting…</span>
+</header>
+<main>
+  <div id="empty"><strong>No running apps</strong>Ask the agent to launch an app in the connected session service. It will appear here.</div>
+  <section id="viewer" hidden aria-label="Remote app">
+    <div id="controls">
+      <button data-key="Tab">Tab</button><button data-key="shift+Tab">Shift + Tab</button>
+      <button data-key="Return">Enter</button><button data-key="Escape">Escape</button>
+      <button data-key="ctrl+a">Select all</button><button id="refresh">Reconnect</button>
+      <small>Click the app to use your keyboard</small>
+    </div>
+    <div id="stage"><div id="screen" aria-label="Remote Cage app"></div></div>
+    <form id="send">
+      <label for="text">Send text</label>
+      <input id="text" type="password" autocomplete="off" maxlength="10000" placeholder="Type or paste text…">
+      <button type="submit">Send</button>
+    </form>
+    <p class="hint">Input goes to the app’s focused field. Text is hidden here for sign-in. Click the app to type and use shortcuts. Paste into Send text, then select Send. Closing this viewer leaves the app running.</p>
+  </section>
+</main>
+<script type="module" src="/viewer.js"></script>
+</html>

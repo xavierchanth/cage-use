@@ -47,7 +47,9 @@ built-in Codex Computer Use plugin.
 Codex launches the server locally on the selected host. A client on another
 machine can also launch `cage-mcp` via its authorized SSH command as a stdio MCP
 server. SSH diagnostics must stay on stderr; do not allocate a TTY for MCP.
-No HTTP endpoint or additional firewall opening is configured.
+The MCP transport does not configure an HTTP endpoint or firewall opening.
+The optional [`cage-web` viewer](browser.md) provides authenticated loopback
+browser access to service-owned apps, including over SSH port forwarding.
 
 Each session has its own random systemd scope name. The server never attaches
 to an existing desktop or accepts a caller-selected port. Plain stdio mode stops

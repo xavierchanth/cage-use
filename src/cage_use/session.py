@@ -221,6 +221,18 @@ class CageDesktop:
     def vnc(self, session: Session, commands: list[str]):
         self.run(["vncdo", "-s", f"127.0.0.1::{session.port}", *commands])
 
+    def vnc_endpoint(self, app: str) -> dict:
+        """Resolve only a live owned app for the local streaming gateway."""
+        with self.lock:
+            return {"host": "127.0.0.1", "port": self.get(app).port}
+
+    def send_text(self, app: str, text: str):
+        """Send composed Unicode text without capturing a screenshot."""
+        if not isinstance(text, str) or len(text) > 10000 or "\0" in text:
+            raise ValueError("Invalid text.")
+        self.type_text(app, text)
+        return {"sent": True}
+
     def interact(self, operation: str, app: str, *args) -> tuple[dict, bytes]:
         """Apply input and capture its result without interleaving another client."""
         if operation not in {"click", "drag", "scroll", "press_key", "type_text"}:

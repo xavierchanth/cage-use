@@ -15,7 +15,7 @@ from .session import CageDesktop
 
 MAX_REQUEST_BYTES = 1024 * 1024
 MAX_RESPONSE_BYTES = 32 * 1024 * 1024
-OPERATIONS = {"launch", "list_apps", "capture", "interact", "close", "start_recording", "stop_recording"}
+OPERATIONS = {"launch", "list_apps", "capture", "interact", "close", "start_recording", "stop_recording", "vnc_endpoint", "send_text"}
 
 
 def endpoint(path: str | Path, *, create: bool = False) -> Path:

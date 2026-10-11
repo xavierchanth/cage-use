@@ -2,6 +2,7 @@
 let
   project = builtins.fromTOML (builtins.readFile ../pyproject.toml);
   mcp = pkgs.python3Packages.mcp;
+  web = import ./web.nix { inherit pkgs; };
   supportedMcp =
     pkgs.lib.versionAtLeast mcp.version "1.29"
     && pkgs.lib.versionOlder mcp.version "2";
@@ -27,10 +28,14 @@ pkgs.python3Packages.buildPythonApplication {
     install -Dm644 README.md "$out/share/doc/cage-use/README.md"
     install -Dm644 CHANGELOG.md "$out/share/doc/cage-use/CHANGELOG.md"
     install -Dm644 docs/mcp.md "$out/share/doc/cage-use/mcp.md"
+    install -Dm644 docs/browser.md "$out/share/doc/cage-use/browser.md"
     install -Dm644 LICENSE "$out/share/doc/cage-use/LICENSE"
   '';
 
   postFixup = ''
+    wrapProgram "$out/bin/cage-web" \
+      --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.nodejs ]} \
+      --set CAGE_WEB_ROOT ${web}
     wrapProgram "$out/bin/cage-mcp" \
       --prefix PATH : ${pkgs.lib.makeBinPath [
         pkgs.grim pkgs.wtype pkgs.python3Packages.vncdotool pkgs.systemd

@@ -1,6 +1,6 @@
 ---
 name: cage-use
-description: Control task-specific Linux GUI apps through Cage MCP, using screenshots, pointer and keyboard input, and recordings. Use for native app interaction and visual verification in dedicated headless sessions.
+description: Control task-specific Linux GUI apps through Cage MCP, and serve their browser viewer for human interaction or sign-in, including over Tailscale. Use for native app interaction and visual verification in dedicated headless sessions.
 ---
 
 # Cage use
@@ -71,6 +71,76 @@ Follow the server's advertised lifetime:
 it does not enumerate the machine's desktop apps. Close the task's exited
 sessions to free their slots. Call `close_app` when finished to stop the
 app and clean up its Cage and VNC processes.
+
+## Browser viewing and human sign-in
+
+When the user wants to view or interact with a Cage app, run `cage-web` on
+the host that owns the app. It serves a bundled noVNC client and streams
+the app's WayVNC display and input over WebSocket. The user only needs a
+browser; no client installation or CDN is involved.
+
+The viewer requires a persistent session service. Find the socket used by
+the agent's `cage-mcp --connect SOCKET` registration and reuse it. Plain
+stdio-owned apps and standalone `cage-session` apps cannot be attached.
+If a service is needed, run this in a Linux login session with an owned
+`XDG_RUNTIME_DIR` and a working systemd user manager:
+
+```sh
+cage-mcp --serve "$XDG_RUNTIME_DIR/cage-use/worker.sock"
+```
+
+Keep that process running in a persistent terminal or user service. The
+socket's parent must be owned by the invoking user and private (0700);
+`--serve` creates it when missing. Configure the agent's MCP command as
+`cage-mcp --connect` with the same absolute socket path, reconnect the
+agent if its registration changed, and launch the app through that MCP
+connection. Do not restart a service with active apps just to open a viewer.
+An older service without `vnc_endpoint` and `send_text` support needs an
+upgrade and restart; account for its apps before stopping it.
+
+For local access, start the viewer in another process:
+
+```sh
+cage-web --connect "$XDG_RUNTIME_DIR/cage-use/worker.sock"
+```
+
+For a remote host already connected to the user's tailnet, use:
+
+```sh
+cage-web --connect "$XDG_RUNTIME_DIR/cage-use/worker.sock" --tailscale
+```
+
+`--tailscale` discovers the host's IPv4 address with `tailscale ip -4` and
+binds only that address. The browser device must be on the tailnet and its
+access rules must allow the viewer port (6080 by default). Use `--port N`
+to choose another port or `--port 0` for a free one. Return the printed
+private `http://100.x.y.z:PORT/#TOKEN` link to the user; the token grants
+viewing and input to the connected service's apps. Keep the link out of
+public artifacts. Restarting the viewer changes its token.
+
+noVNC expects a secure browser context. For remote HTTPS, use existing,
+browser-trusted certificates with `--tls-cert CERT --tls-key KEY`, plus
+`--hostname HOST.TAILNET.ts.net` when the certificate uses that name.
+The listener still binds the Tailscale address and prints an HTTPS link.
+Basic display and input work over Tailscale HTTP, but noVNC emits a
+secure-context warning. A loopback viewer through SSH forwarding also
+provides a secure browser context:
+`ssh -N -L 6080:127.0.0.1:6080 HOST` with the viewer running without
+`--tailscale`; open its printed localhost/loopback link on the client.
+
+Verify the viewer loads, lists the intended app, and reports
+`Connected · live`. Test a harmless input and inspect the app's result
+before claiming control works. Establish whether the test browser runs on
+the Cage host or the client; `localhost` refers to the browser's machine.
+Let the user select the app and click it to type, drag, scroll, or use
+shortcuts. For local clipboard or composed text, paste into **Send text**
+and select **Send**. Pause agent input while the user signs in, then fetch
+fresh `get_app_state` before resuming. Closing the viewer leaves the app
+running; keep the service and viewer alive for the requested handoff.
+
+The complete Nix package includes `cage-web`, Node, `ws`, and noVNC.
+Detailed setup is in `docs/browser.md` in the source repository or
+`share/doc/cage-use/browser.md` in the installed package.
 
 ## Recordings and remote artifacts
 

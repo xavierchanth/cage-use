@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cage-use"
-version = "0.3.0"
+version = "0.4.0"
 description = "App-scoped computer use through headless Cage sessions"
 requires-python = ">=3.11"
 license = "MIT"
@@ -13,6 +13,7 @@ dependencies = ["mcp>=1.29,<2", "Pillow"]
 
 [project.scripts]
 cage-mcp = "cage_use.__main__:main"
+cage-web = "cage_use.web:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

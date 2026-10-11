@@ -10,6 +10,7 @@
         let pkgs = import nixpkgs { inherit system; }; in rec {
           cage-use = import ./nix/package.nix { inherit pkgs; };
           cage-mcp = cage-use;
+          cage-web = cage-use;
           cage-session = cage-use;
           cage-session-app = cage-use;
           default = cage-use;
@@ -18,11 +19,12 @@
         let
           pkgs = import nixpkgs { inherit system; };
           package = import ./nix/package.nix { inherit pkgs; };
+          web = import ./nix/web.nix { inherit pkgs; };
           testPython = pkgs.python3.withPackages (ps: [ ps.mcp ps.pillow ]);
           aliases = self.packages.${system};
           aliasesMatch = builtins.all
             (candidate: candidate.drvPath == package.drvPath)
-            [ aliases.default aliases.cage-use aliases.cage-mcp
+            [ aliases.default aliases.cage-use aliases.cage-mcp aliases.cage-web
               aliases.cage-session aliases.cage-session-app ];
         in {
           protocol = pkgs.runCommand "cage-use-protocol-tests" {
@@ -36,7 +38,10 @@
             export PATH="$TMPDIR/bin:$PATH"
             export PYTHONPATH="${package}/${pkgs.python3.sitePackages}:${./tests}:''${PYTHONPATH:-}"
             ${testPython}/bin/python3 ${./tests/cage-mcp.py}
+            ${testPython}/bin/python3 ${./tests/cage-web.py}
             test -x ${package}/bin/cage-mcp
+            test -x ${package}/bin/cage-web
+            ${package}/bin/cage-web --help
             touch "$out"
           '';
           session = pkgs.runCommand "cage-use-session-tests" {
@@ -48,16 +53,24 @@
             python3 ${./tests/cage-session.py}
             touch "$out"
           '';
+          browser = pkgs.runCommand "cage-use-browser-tests" {
+            nativeBuildInputs = [ pkgs.openssl ];
+          } ''
+            ${pkgs.nodejs}/bin/node --test ${web}/test.mjs
+            touch "$out"
+          '';
           packaging = assert pkgs.lib.assertMsg aliasesMatch
             "all cage-use package outputs must resolve to the same derivation";
             pkgs.runCommand "cage-use-packaging-tests" { } ''
             test -x ${package}/bin/cage-mcp
+            test -x ${package}/bin/cage-web
             test -x ${package}/bin/cage-session
             test -x ${package}/bin/cage-session-app
             test -f ${package}/share/codex/skills/cage-use/SKILL.md
             test -f ${package}/share/doc/cage-use/README.md
             test -f ${package}/share/doc/cage-use/CHANGELOG.md
             test -f ${package}/share/doc/cage-use/mcp.md
+            test -f ${package}/share/doc/cage-use/browser.md
             test -f ${package}/share/doc/cage-use/LICENSE
             touch "$out"
           '';

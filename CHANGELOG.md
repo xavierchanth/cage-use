@@ -2,7 +2,13 @@
 
 All notable changes to cage-use are documented here.
 
-## Unreleased
+## 0.4.0 - 2026-10-10
+
+- Add `cage-web` to view and control service-owned apps in a browser, including
+  manual sign-in, with private access links and optional Tailscale binding.
+- Stream WayVNC through an authenticated Node WebSocket gateway and locally
+  packaged noVNC client, replacing screenshot polling. Include optional HTTPS,
+  the remote-access guide, and HTTP/WebSocket boundary tests.
 
 ## 0.3.0 - 2026-10-09
 
